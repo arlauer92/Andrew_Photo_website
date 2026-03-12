@@ -104,11 +104,10 @@ transform:translateY(0);
 .lightbox{
 position:fixed;
 inset:0;
-background:rgba(0,0,0,.95);
+background:rgba(0,0,0,.96);
 display:none;
 align-items:center;
 justify-content:center;
-z-index:1000;
 flex-direction:column;
 }
 
@@ -117,7 +116,7 @@ display:flex;
 }
 
 .lightbox img{
-max-width:95%;
+max-width:95vw;
 max-height:85vh;
 object-fit:contain;
 }
@@ -239,9 +238,9 @@ div.dataset.tags=photo.tags.join(" ");
 
 div.innerHTML = `
 <img src="thumbnails/${photo.file}"
-     loading="lazy"
-     data-full="images/${photo.file}"
-     data-index="${i}">
+    loading="lazy"
+    data-full="images/${photo.file}"
+    data-index="${i}">
 `;
 
 gallery.appendChild(div);
