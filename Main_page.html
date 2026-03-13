@@ -1,5 +1,5 @@
-<!DOCTYPE html>
 
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -121,4 +121,380 @@ inset:0;
 background:rgba(0,0,0,.95);
 display:none;
 align-items:center;
-justify-co
+justify-content:center;
+flex-direction:column;
+z-index:1000;
+overflow:hidden;
+}
+
+.lightbox.active{
+display:flex;
+}
+
+.lightbox img{
+max-width:95vw;
+max-height:85vh;
+object-fit:contain;
+transition:transform .35s ease, opacity .35s ease;
+}
+
+.lightbox-caption{
+margin-top:20px;
+font-size:.9rem;
+color:#ddd;
+text-align:center;
+}
+
+.close{
+position:absolute;
+top:20px;
+right:30px;
+font-size:2rem;
+cursor:pointer;
+}
+
+.arrow{
+position:absolute;
+top:50%;
+font-size:2rem;
+cursor:pointer;
+user-select:none;
+}
+
+.arrow.left{ left:30px }
+.arrow.right{ right:30px }
+
+</style>
+</head>
+
+<body>
+
+<header>
+Andrew Lauer Photography
+</header>
+
+<nav class="filter-bar">
+
+<div class="filter-group">
+<strong>Location:</strong>
+
+<a data-tag="Europe">Europe</a>
+<a data-tag="Asia">Asia</a>
+<a data-tag="NorthAmerica">North America</a>
+<a data-tag="SouthAmerica">South America</a>
+<a data-tag="Africa">Africa</a>
+<a data-tag="Australia">Australia</a>
+
+</div>
+
+<div id="countryFilters" class="filter-group hidden"></div>
+
+<div class="filter-group">
+
+<strong>Type:</strong>
+
+<a data-tag="Landscape">Landscape</a>
+<a data-tag="Animals">Animals</a>
+<a data-tag="Sports">Sports</a>
+<a data-tag="Architecture">Architecture</a>
+<a data-tag="Flowers">Flowers</a>
+<a data-tag="Sunsets">Sunsets</a>
+<a data-tag="Night">Night</a>
+<a data-tag="Nature">Nature</a>
+<a data-tag="Art">Art</a>
+
+</div>
+
+<div class="filter-group">
+<a id="clearFilters">Clear Filters</a>
+</div>
+
+</nav>
+
+<main id="gallery"></main>
+
+<div id="galleryControls">
+
+<button id="showMore">Show More</button>
+<button id="showAll">Show All</button>
+
+</div>
+
+<div class="lightbox" id="lightbox">
+
+<span class="close">✕</span>
+
+<span class="arrow left">←</span>
+
+<img src="">
+
+<span class="arrow right">→</span>
+
+<div class="lightbox-caption"></div>
+
+</div>
+
+<script>
+
+const continentCountries={
+Europe:["Spain","France","Germany","Switzerland","Poland","Czechia","Belgium","Netherlands","Luxembourg","Lichtenstein","Austria","Slovenia","Slovakia","Denmark","Sweden","Finland","Croatia","Portugal"],
+SouthAmerica:["Uruguay","Argentina"],
+Asia:["Taiwan","Singapore","Nepal","India","Turkey"],
+NorthAmerica:["UnitedStates"],
+Africa:["Namibia"]
+};
+
+const gallery=document.getElementById("gallery");
+
+let photos=[];
+let photoData=[];
+let visiblePhotos=[];
+
+let activeTags=[];
+let visibleLimit=20;
+const step=20;
+
+let currentIndex=0;
+
+fetch("gallery.json")
+.then(r=>r.json())
+.then(data=>{
+
+photoData=shuffle(data);
+
+photoData.forEach((photo,i)=>{
+
+const div=document.createElement("div");
+div.className="photo";
+div.dataset.tags=photo.tags.join(" ");
+
+div.innerHTML=`
+<img src="thumbnails/${photo.file}"
+loading="lazy"
+data-full="images/${photo.file}"
+data-index="${i}">
+`;
+
+gallery.appendChild(div);
+
+});
+
+photos=document.querySelectorAll(".photo img");
+
+setupLightbox();
+setupFilters();
+applyFilters();
+
+});
+
+function shuffle(a){
+return a.sort(()=>Math.random()-0.5);
+}
+
+const lightbox=document.getElementById("lightbox");
+const lightboxImg=lightbox.querySelector("img");
+const caption=lightbox.querySelector(".lightbox-caption");
+
+function showImage(i){
+
+currentIndex=i;
+
+lightboxImg.style.opacity=0;
+
+setTimeout(()=>{
+
+lightboxImg.src=photos[i].dataset.full;
+const info=photoData[i];
+caption.innerHTML=`${info.caption} (${info.year})`;
+
+lightboxImg.style.opacity=1;
+
+},150);
+
+lightbox.classList.add("active");
+
+}
+
+function nextImage(){
+
+let pos=visiblePhotos.indexOf(currentIndex);
+pos=(pos+1)%visiblePhotos.length;
+
+showImage(visiblePhotos[pos]);
+
+}
+
+function prevImage(){
+
+let pos=visiblePhotos.indexOf(currentIndex);
+pos=(pos-1+visiblePhotos.length)%visiblePhotos.length;
+
+showImage(visiblePhotos[pos]);
+
+}
+
+function setupLightbox(){
+
+photos.forEach(img=>{
+img.onclick=()=>showImage(parseInt(img.dataset.index));
+});
+
+}
+
+document.addEventListener("keydown",e=>{
+
+if(!lightbox.classList.contains("active")) return;
+
+if(e.key==="Escape") lightbox.classList.remove("active");
+if(e.key==="ArrowRight") nextImage();
+if(e.key==="ArrowLeft") prevImage();
+
+});
+
+document.querySelector(".close").onclick=()=>lightbox.classList.remove("active");
+document.querySelector(".right").onclick=nextImage;
+document.querySelector(".left").onclick=prevImage;
+
+let startX=0;
+
+lightbox.addEventListener("touchstart",e=>{
+startX=e.touches[0].clientX;
+});
+
+lightbox.addEventListener("touchend",e=>{
+
+let endX=e.changedTouches[0].clientX;
+
+if(endX-startX>50) prevImage();
+if(startX-endX>50) nextImage();
+
+});
+
+const filterLinks=document.querySelectorAll("[data-tag]");
+const clearBtn=document.getElementById("clearFilters");
+
+function setupFilters(){
+
+filterLinks.forEach(link=>{
+
+link.onclick=()=>{
+
+const tag=link.dataset.tag;
+
+if(activeTags.includes(tag)){
+activeTags=activeTags.filter(t=>t!==tag);
+link.classList.remove("active");
+}else{
+activeTags.push(tag);
+link.classList.add("active");
+
+if(continentCountries[tag]) showCountryFilters(tag);
+}
+
+visibleLimit=20;
+applyFilters();
+
+};
+
+});
+
+clearBtn.onclick=()=>{
+
+activeTags=[];
+
+document.querySelectorAll(".active").forEach(a=>a.classList.remove("active"));
+document.getElementById("countryFilters").classList.add("hidden");
+
+visibleLimit=20;
+
+applyFilters();
+
+};
+
+}
+
+function showCountryFilters(continent){
+
+const box=document.getElementById("countryFilters");
+box.innerHTML="";
+
+continentCountries[continent].forEach(country=>{
+
+const a=document.createElement("a");
+a.dataset.tag=country;
+a.textContent=country.replace("UnitedStates","United States");
+
+box.appendChild(a);
+
+});
+
+box.classList.remove("hidden");
+
+}
+
+function applyFilters(){
+
+visiblePhotos=[];
+
+let count=0;
+
+document.querySelectorAll(".photo").forEach((photo,i)=>{
+
+const tags=photo.dataset.tags.split(" ");
+const match=activeTags.every(tag=>tags.includes(tag));
+
+if(activeTags.length===0||match){
+
+visiblePhotos.push(i);
+
+if(count<visibleLimit){
+photo.classList.remove("hidden");
+}else{
+photo.classList.add("hidden");
+}
+
+count++;
+
+}else{
+photo.classList.add("hidden");
+}
+
+});
+
+updateButtons(count);
+
+}
+
+document.getElementById("showMore").onclick=()=>{
+visibleLimit+=step;
+applyFilters();
+};
+
+document.getElementById("showAll").onclick=()=>{
+visibleLimit=999999;
+applyFilters();
+};
+
+function updateButtons(total){
+
+const more=document.getElementById("showMore");
+const all=document.getElementById("showAll");
+
+if(visibleLimit>=total){
+
+more.style.display="none";
+all.style.display="none";
+
+}else{
+
+more.style.display="inline-block";
+all.style.display="inline-block";
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
