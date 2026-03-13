@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -9,7 +10,7 @@
 <style>
 
 :root{
---silver:#bfbfbf;
+--silver:#c0c0c0;
 --bg:#000;
 }
 
@@ -17,20 +18,18 @@ body{
 margin:0;
 background:var(--bg);
 color:var(--silver);
-font-family:"Helvetica Neue",Arial,sans-serif;
-letter-spacing:.03em;
+font-family:Helvetica,Arial,sans-serif;
 }
-
-/* HEADER */
 
 header{
 text-align:center;
-padding:40px 20px 10px;
+padding:40px 20px;
 font-size:clamp(2rem,4vw,3rem);
 font-weight:300;
+letter-spacing:.1em;
 }
 
-/* FILTER BAR */
+/* FILTERS */
 
 .filter-bar{
 text-align:center;
@@ -48,9 +47,7 @@ text-decoration:underline;
 color:var(--silver);
 }
 
-.filter-bar a:hover{
-color:white;
-}
+.filter-bar a:hover{ color:white; }
 
 .filter-bar a.active{
 color:white;
@@ -58,7 +55,9 @@ text-decoration:none;
 border-bottom:1px solid white;
 }
 
-/* GALLERY GRID */
+.hidden{display:none}
+
+/* GALLERY */
 
 main{
 padding:30px;
@@ -67,29 +66,23 @@ grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
 gap:24px;
 }
 
-/* PHOTO TILE */
-
 .photo{
 overflow:hidden;
 cursor:pointer;
 opacity:0;
 transform:translateY(10px);
-animation:fadeIn .8s ease forwards;
+animation:fadeIn .6s ease forwards;
 }
 
 .photo img{
 width:100%;
 height:100%;
-object-fit: contain;
+object-fit:cover;
 transition:transform .4s ease;
 }
 
 .photo:hover img{
 transform:scale(1.05);
-}
-
-.hidden{
-display:none;
 }
 
 @keyframes fadeIn{
@@ -99,315 +92,33 @@ transform:translateY(0);
 }
 }
 
+/* GALLERY BUTTONS */
+
+#galleryControls{
+text-align:center;
+margin:40px 0;
+}
+
+button{
+background:none;
+color:silver;
+border:1px solid silver;
+padding:10px 20px;
+margin:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:silver;
+color:black;
+}
+
 /* LIGHTBOX */
 
 .lightbox{
 position:fixed;
 inset:0;
-background:rgba(0,0,0,.96);
+background:rgba(0,0,0,.95);
 display:none;
 align-items:center;
-justify-content:center;
-flex-direction:column;
-}
-
-.lightbox.active{
-display:flex;
-}
-
-.lightbox img{
-max-width:95vw;
-max-height:85vh;
-object-fit:contain;
-}
-
-.lightbox-caption{
-margin-top:20px;
-font-size:.9rem;
-color:#ddd;
-text-align:center;
-}
-
-.close{
-position:absolute;
-top:20px;
-right:30px;
-font-size:2rem;
-cursor:pointer;
-}
-
-.arrow{
-position:absolute;
-top:50%;
-font-size:2rem;
-cursor:pointer;
-user-select:none;
-}
-
-.arrow.left{ left:30px; }
-.arrow.right{ right:30px; }
-
-</style>
-</head>
-
-<body>
-
-<header>
-Andrew Lauer Photography
-</header>
-
-<!-- FILTERS -->
-
-<nav class="filter-bar">
-
-<div class="filter-group">
-<strong>Location:</strong>
-<a data-tag="Europe">Europe</a>
-<a data-tag="Asia">Asia</a>
-<a data-tag="NorthAmerica">North America</a>
-<a data-tag="SouthAmerica">South America</a>
-<a data-tag="Africa">Africa</a>
-<a data-tag="Australia">Australia</a>
-</div>
-
-<div class="filter-group">
-<strong>Photo Type:</strong>
-<a data-tag="Landscape">Landscape</a>
-<a data-tag="Animals">Animals</a>
-<a data-tag="Sports">Sports</a>
-<a data-tag="Architecture">Architecture</a>
-<a data-tag="Flowers">Flowers</a>
-<a data-tag="Sunsets">Sunsets</a>
-<a data-tag="Night">Night</a>
-<a data-tag="Nature">Nature</a>
-<a data-tag="Cityscape">Cityscape</a>
-<a data-tag="Art">Art</a>
-</div>
-
-<div class="filter-group">
-<a id="clearFilters">Clear Filters</a>
-</div>
-
-</nav>
-
-<!-- GALLERY -->
-
-<main id="gallery"></main>
-
-<!-- LIGHTBOX -->
-
-<div class="lightbox" id="lightbox">
-
-<span class="close">✕</span>
-
-<span class="arrow left">←</span>
-
-<img src="">
-
-<span class="arrow right">→</span>
-
-<div class="lightbox-caption"></div>
-
-</div>
-
-<script>
-
-/* -------------------
-LOAD GALLERY FROM JSON
-------------------- */
-
-const gallery = document.getElementById("gallery");
-
-let photos=[];
-let visiblePhotos = [];
-let photoData=[];
-let currentIndex=0;
-
-fetch("gallery.json")
-.then(res=>res.json())
-.then(data=>{
-
-photoData=data;
-
-data.forEach((photo,i)=>{
-
-const div=document.createElement("div");
-div.className="photo";
-
-div.dataset.tags=photo.tags.join(" ");
-
-div.innerHTML = `
-<img src="thumbnails/${photo.file}"
-    loading="lazy"
-    data-full="images/${photo.file}"
-    data-index="${i}">
-`;
-
-gallery.appendChild(div);
-
-});
-
-photos=document.querySelectorAll(".photo img");
-
-setupLightbox();
-setupFilters();
-
-});
-
-
-/* -------------------
-LIGHTBOX
-------------------- */
-
-const lightbox=document.getElementById("lightbox");
-const lightboxImg=lightbox.querySelector("img");
-const caption=lightbox.querySelector(".lightbox-caption");
-
-const closeBtn=document.querySelector(".close");
-const leftArrow=document.querySelector(".left");
-const rightArrow=document.querySelector(".right");
-
-function showImage(i){
-
-currentIndex = i;
-
-lightboxImg.src = photos[i].dataset.full;
-
-const info = photoData[i];
-
-caption.innerHTML = `${info.caption} (${info.year})`;
-
-lightbox.classList.add("active");
-
-}
-
-function nextImage(){
-
-const currentVisibleIndex = visiblePhotos.indexOf(currentIndex);
-
-const nextVisibleIndex =
-(currentVisibleIndex + 1) % visiblePhotos.length;
-
-currentIndex = visiblePhotos[nextVisibleIndex];
-
-showImage(currentIndex);
-
-}
-
-function prevImage(){
-
-const currentVisibleIndex = visiblePhotos.indexOf(currentIndex);
-
-const prevVisibleIndex =
-(currentVisibleIndex - 1 + visiblePhotos.length) % visiblePhotos.length;
-
-currentIndex = visiblePhotos[prevVisibleIndex];
-
-showImage(currentIndex);
-
-}
-
-function setupLightbox(){
-
-photos.forEach(img=>{
-
-img.addEventListener("click",()=>{
-
-showImage(parseInt(img.dataset.index));
-
-});
-
-});
-
-}
-
-/* controls */
-
-closeBtn.onclick=()=>lightbox.classList.remove("active");
-
-rightArrow.onclick=nextImage;
-leftArrow.onclick=prevImage;
-
-document.addEventListener("keydown",e=>{
-
-if(!lightbox.classList.contains("active")) return;
-
-if(e.key==="Escape") lightbox.classList.remove("active");
-
-if(e.key==="ArrowRight") nextImage();
-
-if(e.key==="ArrowLeft") prevImage();
-
-});
-
-
-/* -------------------
-TAG FILTERING
-------------------- */
-
-const filterLinks=document.querySelectorAll("[data-tag]");
-const clearBtn=document.getElementById("clearFilters");
-
-let activeTags=[];
-
-function applyFilters(){
-
-visiblePhotos = [];
-
-document.querySelectorAll(".photo").forEach((photo,i)=>{
-
-const tags = photo.dataset.tags.split(" ");
-
-const match = activeTags.every(tag => tags.includes(tag));
-
-if(activeTags.length===0 || match){
-    photo.classList.remove("hidden");
-    visiblePhotos.push(i);
-}
-else{
-    photo.classList.add("hidden");
-}
-
-});
-
-}
-
-function setupFilters(){
-
-filterLinks.forEach(link=>{
-
-link.addEventListener("click",()=>{
-
-const tag=link.dataset.tag;
-
-if(activeTags.includes(tag)){
-activeTags=activeTags.filter(t=>t!==tag);
-link.classList.remove("active");
-}
-else{
-activeTags.push(tag);
-link.classList.add("active");
-}
-
-applyFilters();
-
-});
-
-});
-
-clearBtn.addEventListener("click",()=>{
-
-activeTags=[];
-
-filterLinks.forEach(link=>link.classList.remove("active"));
-
-applyFilters();
-
-});
-
-}
-
-</script>
-
-</body>
-</html>
+justify-co
