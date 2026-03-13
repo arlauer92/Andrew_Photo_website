@@ -1,0 +1,141 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Andrew Lauer Photography</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{background:black;color:silver;font-family:Arial;margin:0}
+header{text-align:center;padding:40px;font-size:40px;letter-spacing:3px}
+nav{text-align:center;margin-bottom:20px}
+nav a{margin:0 12px;color:silver;text-decoration:underline;cursor:pointer}
+nav a.active{color:white}
+main{padding:30px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px}
+.photo img{width:100%;height:100%;object-fit:cover;cursor:pointer;transition:transform .3s}
+.photo img:hover{transform:scale(1.05)}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;flex-direction:column}
+.lightbox.active{display:flex}
+.lightbox img{max-width:95vw;max-height:85vh;object-fit:contain}
+.close{position:absolute;top:20px;right:40px;font-size:32px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<header>Andrew Lauer Photography</header>
+
+<nav>
+<a data-tag="Europe">Europe</a>
+<a data-tag="Asia">Asia</a>
+<a data-tag="NorthAmerica">North America</a>
+<a data-tag="SouthAmerica">South America</a>
+<a data-tag="Africa">Africa</a>
+<a data-tag="Australia">Australia</a>
+</nav>
+
+<nav>
+<a data-tag="Landscape">Landscape</a>
+<a data-tag="Animals">Animals</a>
+<a data-tag="Sports">Sports</a>
+<a data-tag="Architecture">Architecture</a>
+<a data-tag="Flowers">Flowers</a>
+<a data-tag="Sunsets">Sunsets</a>
+<a data-tag="Night">Night</a>
+<a data-tag="Nature">Nature</a>
+<a data-tag="Art">Art</a>
+<a data-tag="Urban">Urban</a>
+<a data-tag="Road">Road</a>
+</nav>
+
+<main id="gallery"></main>
+
+<div class="lightbox" id="lightbox">
+<span class="close">✕</span>
+<img src="">
+</div>
+
+<script>
+let activeTags=[]
+
+fetch("gallery.json").then(r=>r.json()).then(data=>{
+
+data.sort(()=>Math.random()-0.5)
+
+const gallery=document.getElementById("gallery")
+
+data.forEach(p=>{
+
+const div=document.createElement("div")
+div.className="photo"
+div.dataset.tags=p.tags.join(" ")
+
+div.innerHTML=`<img src="thumbnails/${p.file}" data-full="images/${p.file}">`
+
+gallery.appendChild(div)
+
+})
+
+setupFilters()
+setupLightbox()
+
+})
+
+function setupFilters(){
+
+document.querySelectorAll("nav a").forEach(a=>{
+
+a.onclick=()=>{
+
+const tag=a.dataset.tag
+
+if(activeTags.includes(tag)){
+activeTags=activeTags.filter(t=>t!==tag)
+a.classList.remove("active")
+}else{
+activeTags.push(tag)
+a.classList.add("active")
+}
+
+applyFilters()
+
+}
+
+})
+
+}
+
+function applyFilters(){
+
+document.querySelectorAll(".photo").forEach(photo=>{
+
+const tags=photo.dataset.tags.split(" ")
+const match=activeTags.every(t=>tags.includes(t))
+
+photo.style.display=(activeTags.length===0||match)?"block":"none"
+
+})
+
+}
+
+function setupLightbox(){
+
+const lightbox=document.getElementById("lightbox")
+const img=lightbox.querySelector("img")
+
+document.querySelectorAll(".photo img").forEach(im=>{
+
+im.onclick=()=>{
+img.src=im.dataset.full
+lightbox.classList.add("active")
+}
+
+})
+
+document.querySelector(".close").onclick=()=>lightbox.classList.remove("active")
+document.addEventListener("keydown",e=>{if(e.key==="Escape") lightbox.classList.remove("active")})
+
+}
+</script>
+
+</body>
+</html>
