@@ -10,7 +10,7 @@
 body{
 background:black;
 color:silver;
-font-family:Arial, sans-serif;
+font-family:Arial;
 margin:0;
 }
 
@@ -18,13 +18,11 @@ header{
 text-align:center;
 padding:40px;
 font-size:36px;
-letter-spacing:2px;
 }
 
-/* FILTERS */
 nav{
 text-align:center;
-margin-bottom:15px;
+margin-bottom:10px;
 }
 
 nav a{
@@ -38,7 +36,13 @@ nav a.active{
 color:white;
 }
 
-/* GALLERY */
+/* country filter row */
+#countryFilters{
+display:none;
+margin-bottom:15px;
+}
+
+/* gallery */
 main{
 padding:30px;
 display:grid;
@@ -51,19 +55,15 @@ width:100%;
 height:100%;
 object-fit:cover;
 cursor:pointer;
-transition:transform .3s;
 }
 
-.photo img:hover{
-transform:scale(1.05);
-}
-
-/* LIGHTBOX */
+/* lightbox */
 .lightbox{
 position:fixed;
 inset:0;
 background:rgba(0,0,0,0.95);
 display:none;
+flex-direction:column;
 align-items:center;
 justify-content:center;
 }
@@ -73,15 +73,20 @@ display:flex;
 }
 
 .lightbox img{
-max-width:95vw;
-max-height:90vh;
+max-width:90vw;
+max-height:80vh;
 object-fit:contain;
+}
+
+.caption{
+margin-top:10px;
+font-size:16px;
 }
 
 .close{
 position:absolute;
 top:20px;
-right:40px;
+right:30px;
 font-size:30px;
 cursor:pointer;
 }
@@ -93,20 +98,23 @@ cursor:pointer;
 
 <header>Andrew Lauer Photography</header>
 
-<!-- CONTINENT FILTERS -->
+<!-- CONTINENTS -->
 
-<nav>
+<nav id="continentFilters">
 <a data-tag="Europe">Europe</a>
 <a data-tag="Asia">Asia</a>
 <a data-tag="NorthAmerica">North America</a>
 <a data-tag="SouthAmerica">South America</a>
 <a data-tag="Africa">Africa</a>
-<a data-tag="Australia">Australia</a>
 </nav>
 
-<!-- TYPE FILTERS -->
+<!-- COUNTRIES -->
 
-<nav>
+<nav id="countryFilters"></nav>
+
+<!-- TYPES -->
+
+<nav id="typeFilters">
 <a data-tag="Landscape">Landscape</a>
 <a data-tag="Animals">Animals</a>
 <a data-tag="Sports">Sports</a>
@@ -124,47 +132,59 @@ cursor:pointer;
 
 <div class="lightbox" id="lightbox">
 <span class="close">✕</span>
-<img src="">
+<img>
+<div class="caption"></div>
 </div>
 
 <script>
 
-const gallery = document.getElementById("gallery");
+let photos = [];
+let filteredPhotos = [];
+let currentIndex = 0;
+
 let activeTags = [];
 
-// LOAD JSON
+const gallery = document.getElementById("gallery");
+const countryBar = document.getElementById("countryFilters");
+
+// load data
 fetch("./gallery.json")
-.then(res => res.json())
+.then(r => r.json())
 .then(data => {
 
-console.log("Loaded photos:", data); // DEBUG
+photos = data;
+photos.sort(() => Math.random() - 0.5);
 
-// random order
-data.sort(() => Math.random() - 0.5);
+buildGallery(photos);
 
-data.forEach(photo => {
+setupFilters();
+setupLightbox();
+
+});
+
+// build gallery
+function buildGallery(list){
+
+gallery.innerHTML = "";
+
+list.forEach((p, i) => {
 
 const div = document.createElement("div");
 div.className = "photo";
-div.dataset.tags = photo.tags.join(" ");
 
 div.innerHTML = `
-<img src="thumbnails/${photo.file}" data-full="images/${photo.file}">
+<img src="thumbnails/${p.file}" data-index="${i}">
 `;
 
 gallery.appendChild(div);
 
 });
 
-setupFilters();
-setupLightbox();
+filteredPhotos = list;
 
-})
-.catch(err => {
-console.error("ERROR LOADING JSON:", err);
-});
+}
 
-// FILTERS
+// filters
 function setupFilters(){
 
 document.querySelectorAll("nav a").forEach(link => {
@@ -181,6 +201,7 @@ activeTags.push(tag);
 link.classList.add("active");
 }
 
+updateCountries(tag);
 applyFilters();
 
 };
@@ -189,32 +210,84 @@ applyFilters();
 
 }
 
-function applyFilters(){
+// dynamic country filters
+function updateCountries(continent){
 
-document.querySelectorAll(".photo").forEach(photo => {
+const countries = new Set();
 
-const tags = photo.dataset.tags.split(" ");
+photos.forEach(p => {
+if(p.tags.includes(continent)){
+p.tags.forEach(t => {
+if(t !== continent && !["Landscape","Animals","Sports","Architecture","Flowers","Sunsets","Night","Nature","Art","Urban","Road"].includes(t)){
+countries.add(t);
+}
+});
+}
+});
 
-const match = activeTags.every(t => tags.includes(t));
+countryBar.innerHTML = "";
 
-photo.style.display =
-(activeTags.length === 0 || match) ? "block" : "none";
+if(countries.size === 0){
+countryBar.style.display = "none";
+return;
+}
+
+countryBar.style.display = "block";
+
+countries.forEach(c => {
+
+const a = document.createElement("a");
+a.textContent = c;
+a.dataset.tag = c;
+
+a.onclick = () => {
+
+if(activeTags.includes(c)){
+activeTags = activeTags.filter(t => t !== c);
+a.classList.remove("active");
+} else {
+activeTags.push(c);
+a.classList.add("active");
+}
+
+applyFilters();
+
+};
+
+countryBar.appendChild(a);
 
 });
 
 }
 
-// LIGHTBOX
+// apply filters
+function applyFilters(){
+
+const filtered = photos.filter(p => {
+return activeTags.every(tag => p.tags.includes(tag));
+});
+
+buildGallery(filtered);
+setupLightbox();
+
+}
+
+// lightbox
 function setupLightbox(){
 
 const lightbox = document.getElementById("lightbox");
 const img = lightbox.querySelector("img");
+const caption = lightbox.querySelector(".caption");
 
-document.querySelectorAll(".photo img").forEach(image => {
+document.querySelectorAll(".photo img").forEach(el => {
 
-image.onclick = () => {
-img.src = image.dataset.full;
+el.onclick = () => {
+
+currentIndex = parseInt(el.dataset.index);
+
+showImage();
 lightbox.classList.add("active");
+
 };
 
 });
@@ -223,11 +296,34 @@ document.querySelector(".close").onclick = () => {
 lightbox.classList.remove("active");
 };
 
-document.addEventListener("keydown", e => {
-if(e.key === "Escape"){
-lightbox.classList.remove("active");
+document.onkeydown = (e) => {
+
+if(!lightbox.classList.contains("active")) return;
+
+if(e.key === "ArrowRight") next();
+if(e.key === "ArrowLeft") prev();
+if(e.key === "Escape") lightbox.classList.remove("active");
+
+};
+
+function showImage(){
+
+const p = filteredPhotos[currentIndex];
+
+img.src = "images/" + p.file;
+caption.textContent = p.caption || "";
+
 }
-});
+
+function next(){
+currentIndex = (currentIndex + 1) % filteredPhotos.length;
+showImage();
+}
+
+function prev(){
+currentIndex = (currentIndex - 1 + filteredPhotos.length) % filteredPhotos.length;
+showImage();
+}
 
 }
 
