@@ -167,10 +167,11 @@ function buildGallery(list){
 
 gallery.innerHTML = "";
 
+filteredPhotos = list;   // ⭐ IMPORTANT
+
 list.forEach((p, i) => {
 
 const div = document.createElement("div");
-div.className = "photo";
 
 div.innerHTML = `
 <img src="thumbnails/${p.file}" data-index="${i}">
@@ -179,9 +180,6 @@ div.innerHTML = `
 gallery.appendChild(div);
 
 });
-
-filteredPhotos = list;
-
 }
 
 // filters
@@ -268,7 +266,7 @@ return activeTags.every(tag => p.tags.includes(tag));
 });
 
 buildGallery(filtered);
-setupLightbox();
+setupLightbox();   // ⭐ REQUIRED
 
 }
 
@@ -315,18 +313,31 @@ caption.textContent = p.caption || "";
 
 }
 
-function next(){
+document.onkeydown = (e) => {
+
+if(!lightbox.classList.contains("active")) return;
+
+if(e.key === "ArrowRight"){
 currentIndex = (currentIndex + 1) % filteredPhotos.length;
 showImage();
 }
 
-function prev(){
+if(e.key === "ArrowLeft"){
 currentIndex = (currentIndex - 1 + filteredPhotos.length) % filteredPhotos.length;
 showImage();
 }
 
+if(e.key === "Escape"){
+lightbox.classList.remove("active");
 }
 
+};
+
+document.querySelector(".close").onclick = () => {
+lightbox.classList.remove("active");
+};
+
+}
 </script>
 
 </body>
