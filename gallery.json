@@ -2,10 +2,12 @@
   {
     "file": "IMG_5732.jpg",
     "tags": [
-      "Portugal",
-      "Europe"
+      "France",
+      "Europe",
+      "Landscape",
+      "Nature"
     ],
-    "caption": "",
+    "caption": "view from cave",
     "year": "2019"
   },
   {
@@ -16,7 +18,7 @@
       "Architecture",
       "Nature"
     ],
-    "caption": "Looking through the stone window",
+    "caption": "View from window",
     "year": "2025"
   },
   {
@@ -26,16 +28,7 @@
       "Europe",
       "Art"
     ],
-    "caption": "Wall textures",
+    "caption": "castle inerior wall",
     "year": "2025"
-  },
-  {
-    "file": "IMG_5732.jpg",
-    "tags": [
-      "Portugal",
-      "Europe"
-    ],
-    "caption": "",
-    "year": "2019"
   }
 ]
