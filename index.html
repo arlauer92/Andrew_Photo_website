@@ -233,11 +233,18 @@ fetch("./gallery.json")
 photos = data;
 photos.sort(() => Math.random() - 0.5);
 
-buildGallery(photos);
+// initialize empty filters explicitly
+locationTags = [];
+typeTags = [];
+matchAllTypes = true;
 
-applyFilters();
-setupFilters();
+// build gallery FIRST
+buildGallery(photos);
+lazyLoad();
 setupLightbox();
+
+// then enable filters
+setupFilters();
 
 });
 
@@ -407,22 +414,22 @@ function applyFilters(){
 
 const filtered = photos.filter(p => {
 
-const tags = p.tags;
+const tags = p.tags || [];
 
-// --- LOCATION LOGIC ---
-let locationMatch =
-locationTags.length === 0 ||
-locationTags.some(tag => tags.includes(tag));
+// --- LOCATION ---
+let locationMatch = true;
+if(locationTags.length > 0){
+locationMatch = locationTags.some(tag => tags.includes(tag));
+}
 
-// --- TYPE LOGIC ---
-let typeMatch =
-typeTags.length === 0 ||
-(matchAllTypes
+// --- TYPE ---
+let typeMatch = true;
+if(typeTags.length > 0){
+typeMatch = matchAllTypes
   ? typeTags.every(tag => tags.includes(tag))
-  : typeTags.some(tag => tags.includes(tag))
-);
+  : typeTags.some(tag => tags.includes(tag));
+}
 
-// --- FINAL ---
 return locationMatch && typeMatch;
 
 });
@@ -503,6 +510,7 @@ const lightbox = document.getElementById("lightbox");
 const img = lightbox.querySelector("img");
 const caption = lightbox.querySelector(".caption");
 const toggle = document.getElementById("typeToggleContainer");
+const toggleContainer = document.getElementById("typeToggleContainer");
 
 document.querySelectorAll(".photo img").forEach(el => {
 
@@ -513,8 +521,8 @@ toggle.style.display = "none";   // hide
 });
 
 document.querySelector(".close").onclick = () => {
-lightbox.classList.remove("active");
-toggle.style.display = "block";  // restore
+lightbox.classList.add("active");
+toggleContainer.style.display = "none";
 };
 
 
@@ -555,6 +563,7 @@ lightbox.classList.add("active");
 
 document.querySelector(".close").onclick = () => {
 lightbox.classList.remove("active");
+toggleContainer.style.display = "block";
 };
 
 document.onkeydown = (e) => {
@@ -563,8 +572,10 @@ if(!lightbox.classList.contains("active")) return;
 
 if(e.key === "ArrowRight") next();
 if(e.key === "ArrowLeft") prev();
-if(e.key === "Escape") lightbox.classList.remove("active");
-
+if(e.key === "Escape"){
+lightbox.classList.remove("active");
+toggleContainer.style.display = "block";
+}
 };
 
 function showImage(){
