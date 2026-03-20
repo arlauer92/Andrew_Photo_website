@@ -488,6 +488,21 @@ function setupLightbox(){
 const lightbox = document.getElementById("lightbox");
 const img = lightbox.querySelector("img");
 const caption = lightbox.querySelector(".caption");
+const toggle = document.getElementById("typeToggleContainer");
+
+document.querySelectorAll(".photo img").forEach(el => {
+
+el.onclick = () => {
+toggle.style.display = "none";   // hide
+};
+
+});
+
+document.querySelector(".close").onclick = () => {
+lightbox.classList.remove("active");
+toggle.style.display = "block";  // restore
+};
+
 
 let startX = 0;
 
