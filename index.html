@@ -50,11 +50,19 @@ grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
 gap:20px;
 }
 
+.photo{
+aspect-ratio:1 / 1;
+background:black;
+display:flex;
+align-items:center;
+justify-content:center;
+overflow:hidden;
+}
+
 .photo img{
-width:100%;
-height:100%;
-object-fit:cover;
-cursor:pointer;
+max-width:100%;
+max-height:100%;
+object-fit:contain;
 }
 
 /* lightbox */
@@ -81,6 +89,16 @@ object-fit:contain;
 .caption{
 margin-top:10px;
 font-size:16px;
+}
+
+.photo{
+transition:opacity 0.4s ease, transform 0.4s ease;
+}
+
+.photo.hide{
+opacity:0;
+transform:scale(0.95);
+pointer-events:none;
 }
 
 .close{
@@ -128,6 +146,13 @@ cursor:pointer;
 <a data-tag="Road">Road</a>
 </nav>
 
+<div style="position:fixed; right:20px; top:150px; color:silver;">
+<label>
+<input type="checkbox" id="typeToggle">
+ Match ANY types
+</label>
+</div>
+
 <main id="gallery"></main>
 
 <div class="lightbox" id="lightbox">
@@ -138,11 +163,20 @@ cursor:pointer;
 
 <script>
 
+//////////////////////////////////////////////////////////////////////////
+/////// This is the Javascript section ///////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
 let photos = [];
 let filteredPhotos = [];
 let currentIndex = 0;
+let visibleCount = 20;
+let showAll = false;
 
 let activeTags = [];
+let locationTags = [];
+let typeTags = [];
+let matchAllTypes = true; // default
 
 const gallery = document.getElementById("gallery");
 const countryBar = document.getElementById("countryFilters");
@@ -167,11 +201,14 @@ function buildGallery(list){
 
 gallery.innerHTML = "";
 
-filteredPhotos = list;   // ⭐ IMPORTANT
+filteredPhotos = list;
 
-list.forEach((p, i) => {
+let displayList = showAll ? list : list.slice(0, visibleCount);
+
+displayList.forEach((p, i) => {
 
 const div = document.createElement("div");
+div.className = "photo";
 
 div.innerHTML = `
 <img src="thumbnails/${p.file}" data-index="${i}">
@@ -180,6 +217,48 @@ div.innerHTML = `
 gallery.appendChild(div);
 
 });
+
+// SHOW MORE BUTTONS
+addShowButtons(list.length);
+
+}
+
+function addShowButtons(total){
+
+// remove old buttons
+document.getElementById("showControls")?.remove();
+
+const container = document.createElement("div");
+container.id = "showControls";
+container.style.textAlign = "center";
+container.style.padding = "20px";
+
+if(!showAll && visibleCount < total){
+
+const more = document.createElement("button");
+more.textContent = "Show More";
+more.onclick = () => {
+visibleCount += 20;
+buildGallery(filteredPhotos);
+setupLightbox();
+};
+
+container.appendChild(more);
+
+const all = document.createElement("button");
+all.textContent = " Show All";
+all.onclick = () => {
+showAll = true;
+buildGallery(filteredPhotos);
+setupLightbox();
+};
+
+container.appendChild(all);
+
+}
+
+gallery.after(container);
+
 }
 
 // filters
@@ -191,15 +270,22 @@ link.onclick = () => {
 
 const tag = link.dataset.tag;
 
-if(activeTags.includes(tag)){
-activeTags = activeTags.filter(t => t !== tag);
+// determine type vs location
+const isType = [
+"Landscape","Animals","Sports","Architecture","Flowers",
+"Sunsets","Night","Nature","Art","Urban","Road"
+].includes(tag);
+
+let targetArray = isType ? typeTags : locationTags;
+
+if(targetArray.includes(tag)){
+targetArray.splice(targetArray.indexOf(tag),1);
 link.classList.remove("active");
 } else {
-activeTags.push(tag);
+targetArray.push(tag);
 link.classList.add("active");
 }
 
-updateCountries(tag);
 applyFilters();
 
 };
@@ -258,15 +344,56 @@ countryBar.appendChild(a);
 
 }
 
+//toggle logic
+document.getElementById("typeToggle").onchange = (e) => {
+
+matchAllTypes = !e.target.checked;
+
+applyFilters();
+
+};
+
 // apply filters
 function applyFilters(){
 
+visibleCount = 20;
+showAll = false;
+
 const filtered = photos.filter(p => {
-return activeTags.every(tag => p.tags.includes(tag));
+
+const tags = p.tags;
+
+// --- LOCATION LOGIC (OR) ---
+let locationMatch =
+locationTags.length === 0 ||
+locationTags.some(tag => tags.includes(tag));
+
+// --- TYPE LOGIC ---
+let typeMatch;
+
+if(typeTags.length === 0){
+typeMatch = true;
+}
+else if(matchAllTypes){
+typeMatch = typeTags.every(tag => tags.includes(tag));
+}
+else{
+typeMatch = typeTags.some(tag => tags.includes(tag));
+}
+
+// final decision
+return locationMatch && typeMatch;
+
 });
 
+document.querySelectorAll(".photo").forEach(p => {
+p.classList.add("hide");
+});
+
+setTimeout(() => {
 buildGallery(filtered);
-setupLightbox();   // ⭐ REQUIRED
+setupLightbox();
+}, 200);
 
 }
 
@@ -276,6 +403,28 @@ function setupLightbox(){
 const lightbox = document.getElementById("lightbox");
 const img = lightbox.querySelector("img");
 const caption = lightbox.querySelector(".caption");
+
+let startX = 0;
+
+lightbox.addEventListener("touchstart", e => {
+startX = e.touches[0].clientX;
+});
+
+lightbox.addEventListener("touchend", e => {
+
+let endX = e.changedTouches[0].clientX;
+let diff = startX - endX;
+
+if(Math.abs(diff) > 50){
+if(diff > 0){
+currentIndex = (currentIndex + 1) % filteredPhotos.length;
+} else {
+currentIndex = (currentIndex - 1 + filteredPhotos.length) % filteredPhotos.length;
+}
+showImage();
+}
+
+});
 
 document.querySelectorAll(".photo img").forEach(el => {
 
