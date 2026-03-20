@@ -83,15 +83,6 @@ opacity:0;
 transition:opacity .4s;
 }
 
-.lightbox img.visible{opacity:1}
-
-.caption{margin-top:10px}
-
-.close{
-position:absolute;top:20px;right:30px;
-font-size:30px;cursor:pointer;
-}
-
 /* loader */
 .loader{
 width:40px;height:40px;
@@ -102,10 +93,34 @@ animation:spin 1s linear infinite;
 margin-bottom:20px;
 }
 
+
+.lightbox img.visible{opacity:1}
+
+.caption{margin-top:10px; font-size:16px;
+}
+
+.close{
+position:absolute;top:20px;right:30px;
+font-size:30px;cursor:pointer;
+}
+
+
 @keyframes spin{
 0%{transform:rotate(0deg)}
 100%{transform:rotate(360deg)}
 }
+
+
+.photo{
+transition:opacity 0.4s ease, transform 0.4s ease;
+}
+
+.photo.hide{
+opacity:0;
+transform:scale(0.95);
+pointer-events:none;
+}
+
 </style>
 
 </head>
@@ -146,18 +161,25 @@ margin-bottom:20px;
 
 <!-- CLEAR -->
 
-<div style="text-align:center">
+<div style="text-align:center; margin:10px;">
 <button id="clearFilters">Clear Filters</button>
 </div>
 
 <!-- TOGGLE -->
 
-<div id="typeToggleContainer">
+<div id="typeToggleContainer" style="
+position:fixed;
+right:20px;
+top:150px;
+color:silver;
+z-index:10;
+">
 <label>
 <input type="checkbox" id="typeToggle">
  Match ANY types
 </label>
 </div>
+
 
 <main id="gallery"></main>
 
@@ -170,6 +192,10 @@ margin-bottom:20px;
 
 <script>
 
+//////////////////////////////////////////////////////////////////////////
+/////// This is the Javascript section ///////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
 let photos = [];
 let filteredPhotos = [];
 
@@ -180,12 +206,15 @@ let matchAllTypes = true;
 let visibleCount = 20;
 let showAll = false;
 let currentIndex = 0;
+let activeTags = []; // maybe qwerty effect variable? 
+
 
 const gallery = document.getElementById("gallery");
 const lightbox = document.getElementById("lightbox");
 const toggle = document.getElementById("typeToggleContainer");
+const countryBar = document.getElementById("countryFilters");
 
-/* LOAD */
+/* LOAD DATA */
 fetch("./gallery.json")
 .then(r => r.json())
 .then(data => {
@@ -193,14 +222,17 @@ fetch("./gallery.json")
 photos = data;
 photos.sort(()=>Math.random()-0.5);
 
+// build gallery FIRST
 buildGallery(photos);
 lazyLoad();
 setupLightbox();
+
+// enable filters
 setupFilters();
 
 });
 
-/* BUILD */
+/* BUILD Gallery*/
 function buildGallery(list){
 
 gallery.innerHTML="";
@@ -215,20 +247,23 @@ div.innerHTML=`<img data-src="thumbnails/${p.file}" data-index="${i}" class="laz
 gallery.appendChild(div);
 });
 
+/* make country buttons appear */
 addShowButtons(list.length);
 
 }
 
-/* SHOW MORE */
+/* function for country buttons */
 function addShowButtons(total){
 
 document.getElementById("controls")?.remove();
 
-if(showAll || total<=visibleCount) return;
+if(showAll || total<=visibleCount) return; //Here is a difference from the old code, why not braced loop? 
 
 const c=document.createElement("div");
 c.id="controls";
 c.style.textAlign="center";
+c.style.padding = "20px";
+
 
 const more=document.createElement("button");
 more.textContent="Show More";
@@ -263,6 +298,7 @@ a.onclick=()=>{
 
 const tag=a.dataset.tag;
 
+// determine applied filter set
 const isType=[
 "Landscape","Animals","Sports","Architecture","Flowers",
 "Sunsets","Night","Nature","Art","Urban","Road"
@@ -304,24 +340,30 @@ applyFilters();
 }
 
 /* APPLY */
+// apply filters
 function applyFilters(){
 
-const filtered=photos.filter(p=>{
+const filtered = photos.filter(p => {
 
-const tags=p.tags||[];
+const tags = p.tags || [];
 
-let loc=locationTags.length===0 || locationTags.some(t=>tags.includes(t));
+// --- LOCATION ---
+let locationMatch = true;
+if(locationTags.length > 0){
+locationMatch = locationTags.some(tag => tags.includes(tag));
+}
 
-let type=typeTags.length===0 || (
-matchAllTypes
-? typeTags.every(t=>tags.includes(t))
-: typeTags.some(t=>tags.includes(t))
-);
+// --- TYPE ---
+let typeMatch = true;
+if(typeTags.length > 0){
+typeMatch = matchAllTypes
+  ? typeTags.every(tag => tags.includes(tag))
+  : typeTags.some(tag => tags.includes(tag));
+}
 
-return loc && type;
+return locationMatch && typeMatch;
 
 });
-
 visibleCount=20;
 showAll=false;
 
