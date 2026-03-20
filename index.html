@@ -88,6 +88,7 @@ display:none;
 flex-direction:column;
 align-items:center;
 justify-content:center;
+z-index:1000;  /* higher than toggle */
 }
 
 .lightbox.active ~ #typeToggleContainer{
@@ -187,7 +188,7 @@ position:fixed;
 right:20px;
 top:150px;
 color:silver;
-z-index:1000;
+z-index:10;
 ">
 <label>
 <input type="checkbox" id="typeToggle">
@@ -234,6 +235,7 @@ photos.sort(() => Math.random() - 0.5);
 
 buildGallery(photos);
 
+applyFilters();
 setupFilters();
 setupLightbox();
 
@@ -403,44 +405,36 @@ applyFilters();
 // apply filters
 function applyFilters(){
 
-visibleCount = 20;
-showAll = false;
-
 const filtered = photos.filter(p => {
 
 const tags = p.tags;
 
-// --- LOCATION LOGIC (OR) ---
+// --- LOCATION LOGIC ---
 let locationMatch =
 locationTags.length === 0 ||
 locationTags.some(tag => tags.includes(tag));
 
 // --- TYPE LOGIC ---
-let typeMatch;
+let typeMatch =
+typeTags.length === 0 ||
+(matchAllTypes
+  ? typeTags.every(tag => tags.includes(tag))
+  : typeTags.some(tag => tags.includes(tag))
+);
 
-if(typeTags.length === 0){
-typeMatch = true;
-}
-else if(matchAllTypes){
-typeMatch = typeTags.every(tag => tags.includes(tag));
-}
-else{
-typeMatch = typeTags.some(tag => tags.includes(tag));
-}
-
-// final decision
+// --- FINAL ---
 return locationMatch && typeMatch;
 
 });
 
-document.querySelectorAll(".photo").forEach(p => {
-p.classList.add("hide");
-});
+// reset pagination
+visibleCount = 20;
+showAll = false;
 
-setTimeout(() => {
 buildGallery(filtered);
 lazyLoad();
 setupLightbox();
+
 }, 200);
 
 }
