@@ -42,27 +42,31 @@ display:none;
 margin-bottom:15px;
 }
 
-/* gallery */
+/* gallery CSS section */
+/* main */
 main{
 padding:30px;
 display:grid;
-grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+grid-template-columns:repeat(auto-fill, minmax(250px, 1fr));
 gap:20px;
 }
 
+/* square container */
 .photo{
 aspect-ratio:1 / 1;
 background:black;
 display:flex;
 align-items:center;
 justify-content:center;
-overflow:hidden;
+overflow:hidden;   /* ⭐ critical */
 }
 
+/* image fits INSIDE square */
 .photo img{
 max-width:100%;
 max-height:100%;
 object-fit:contain;
+display:block;     /* ⭐ prevents weird inline spacing */
 }
 
 /* lightbox */
@@ -146,14 +150,20 @@ cursor:pointer;
 <a data-tag="Road">Road</a>
 </nav>
 
-<div style="position:fixed; right:20px; top:150px; color:silver;">
+<main id="gallery"></main>
+
+<div id="typeToggleContainer" style="
+position:fixed;
+right:20px;
+top:150px;
+color:silver;
+z-index:1000;
+">
 <label>
 <input type="checkbox" id="typeToggle">
  Match ANY types
 </label>
 </div>
-
-<main id="gallery"></main>
 
 <div class="lightbox" id="lightbox">
 <span class="close">✕</span>
